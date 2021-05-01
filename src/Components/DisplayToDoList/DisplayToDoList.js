@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, { createContext, useContext, useReducer } from "react";
 import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
 import { blue, blueGrey } from "@material-ui/core/colors";
 
@@ -31,7 +31,7 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
   },
   container: {
-    height: 900,
+    height: 850,
     width: 700,
     padding: "2%",
     backgroundColor: "#1e709e",
@@ -43,7 +43,13 @@ const useStyles = makeStyles((theme) => ({
   paper: {
     paddingTop: 2,
     paddingBottom: 15,
-    height: "90%",
+    height: "95%",
+    margin: "auto",
+    width: 500,
+    backgroundColor: "#e0d9d1",
+  },
+  itemsDiv: {
+    height: "600px",
     overflow: "auto",
     margin: "auto",
     width: 500,
@@ -54,8 +60,9 @@ const useStyles = makeStyles((theme) => ({
 const initialState = {
   todos: [
     {
-      title: "Read",
-      note: "Currently reading Dune",
+      title: "Example initial item",
+      note:
+        "This can have a note attached to it. All items can be updated or deleted.",
       checked: false,
       id: 1555,
     },
@@ -67,7 +74,6 @@ const actions = {
   UPDATE_TODOS: "UPDATE_TODOS",
   DELETE_TODO: "DELETE_TODO",
   UPDATE_CHECKED: "UPDATE_CHECKED",
-  DELETE_CHECKED: "DELETE_CHECKED",
 };
 
 function toDoListReducer(state, action) {
@@ -79,7 +85,8 @@ function toDoListReducer(state, action) {
     case actions.UPDATE_TODOS:
       return { ...state, todos: action.value };
     case actions.DELETE_TODO:
-      return action.value;
+      newTodos = _.filter(state.todos, (item) => item.id != action.value);
+      return { ...state, todos: newTodos };
     case actions.UPDATE_CHECKED:
       const checked = action.value.checked;
       const index = _.findIndex(
@@ -89,12 +96,6 @@ function toDoListReducer(state, action) {
       newTodos = [...state.todos];
       newTodos[index] = { ...newTodos[index], checked: checked };
       return { ...state, todos: newTodos };
-    case actions.DELETE_CHECKED:
-      newTodos = _.filter(state.todos, (item) => item.checked === false);
-      return {
-        ...state,
-        todos: newTodos,
-      };
     default:
       return state;
   }
@@ -121,7 +122,6 @@ function Provider({ children }) {
     updateTodos: (value) => dispatch({ type: actions.UPDATE_TODOS, value }),
     deleteTodo: (value) => dispatch({ type: actions.DELETE_TODO, value }),
     updateChecked: (value) => dispatch({ type: actions.UPDATE_CHECKED, value }),
-    deleteChecked: (value) => dispatch({ type: actions.DELETE_CHECKED, value }),
   };
 
   return <ToDoContext.Provider value={value}>{children}</ToDoContext.Provider>;
@@ -130,13 +130,9 @@ function Provider({ children }) {
 export function ToDoList() {
   const classes = useStyles();
 
-  const {
-    todos,
-    updateChecked,
-    addTodo,
-    deleteChecked,
-    updateTodos,
-  } = useContext(ToDoContext);
+  const { todos, updateChecked, addTodo, updateTodos, deleteTodo } = useContext(
+    ToDoContext
+  );
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState("");
   const [newId, setNewId] = React.useState(1);
@@ -196,11 +192,11 @@ export function ToDoList() {
     <Container className={classes.container}>
       <Paper className={classes.paper}>
         <Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} position="sticky">
             <ToDoHeader />
           </Grid>
           <Grid className={classes.gridRow} container direction="row">
-            <Grid item xs={6}>
+            <Grid item xs={12}>
               <Button
                 variant="contained"
                 color="primary"
@@ -209,28 +205,22 @@ export function ToDoList() {
                 Add Item
               </Button>
             </Grid>
-            <Grid item xs={6}>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={deleteChecked}
-              >
-                Delete Selected
-              </Button>
-            </Grid>
           </Grid>
           <Grid item xs={12}>
-            {_.map(todos, (item, idx) => (
-              <ToDo
-                key={`todo-${idx}`}
-                id={item.id}
-                title={item.title}
-                note={item.note}
-                checked={item.checked}
-                updateChecked={updateChecked}
-                handleEditItem={() => handleOpenModal(item.id)}
-              />
-            ))}
+            <div className={classes.itemsDiv}>
+              {_.map(todos, (item, idx) => (
+                <ToDo
+                  key={`todo-${idx}`}
+                  id={item.id}
+                  title={item.title}
+                  note={item.note}
+                  checked={item.checked}
+                  updateChecked={updateChecked}
+                  handleEditItem={() => handleOpenModal(item.id)}
+                  handleDeleteItem={() => deleteTodo(item.id)}
+                />
+              ))}
+            </div>
           </Grid>
           <Dialog open={dialogOpen} onClose={handleCloseDialog}>
             <DialogTitle id="form-dialog-title">Add New Item</DialogTitle>

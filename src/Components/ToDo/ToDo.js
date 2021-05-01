@@ -10,6 +10,7 @@ import {
 } from "@material-ui/core";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import EditIcon from "@material-ui/icons/Edit";
+import DeleteIcon from "@material-ui/icons/Delete";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -35,14 +36,12 @@ export default function ToDo({
   checked,
   updateChecked,
   handleEditItem,
+  handleDeleteItem,
 }) {
   const classes = useStyles();
   return (
     <Accordion className={classes.root}>
-      <AccordionSummary
-        // alignItems="space-between"
-        expandIcon={<ExpandMoreIcon />}
-      >
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Grid container direction="row" alignItems="center">
           <Grid item xs={1}>
             <Checkbox
@@ -54,7 +53,7 @@ export default function ToDo({
               inputProps={{ "aria-label": "primary checkbox" }}
             />
           </Grid>
-          <Grid item xs={10}>
+          <Grid item xs={9}>
             <h4 className={classes.floatLeft}>{title}</h4>
           </Grid>
           <Grid item xs={1}>
@@ -65,6 +64,16 @@ export default function ToDo({
               }}
             >
               <EditIcon />
+            </IconButton>
+          </Grid>
+          <Grid item xs={1}>
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDeleteItem(id);
+              }}
+            >
+              <DeleteIcon />
             </IconButton>
           </Grid>
         </Grid>
