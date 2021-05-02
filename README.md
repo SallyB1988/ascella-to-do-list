@@ -1,4 +1,4 @@
-## Ascella ToDo List
+## ToDo List
 
 The goal of this project is to create a ToDo list using ReactJS and the Material UI component library.
 
