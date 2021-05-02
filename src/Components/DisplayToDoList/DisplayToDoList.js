@@ -3,21 +3,12 @@ import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
 import { blue, blueGrey } from "@material-ui/core/colors";
 import { v4 as uuidV4 } from "uuid";
-import {
-  makeStyles,
-  Button,
-  DialogTitle,
-  DialogContent,
-  Paper,
-  Container,
-  TextField,
-  Dialog,
-  DialogActions,
-} from "@material-ui/core";
+import { makeStyles, Button, Paper, Container } from "@material-ui/core";
 import _ from "lodash";
 
 import ToDo from "../ToDo/ToDo";
 import ToDoHeader from "../ToDoHeader/ToDoHeader";
+import ToDoModal from "../ToDoModal/ToDoModal";
 
 const theme = createMuiTheme({
   palette: {
@@ -67,10 +58,20 @@ const initialState = {
       id: uuidV4(),
     },
   ],
+  newItem: {
+    // used when creating/updating a new todo item
+    title: "",
+    note: "",
+    checked: false,
+    id: undefined,
+  },
 };
 
 const actions = {
   ADD_TODO: "ADD_TODO",
+  UPDATE_NEW_TITLE: "UPDATE_NEW_TITLE",
+  UPDATE_NEW_NOTE: "UPDATE_NEW_NOTE",
+  UPDATE_NEW_ID: "UPDATE_NEW_ID",
   UPDATE_TODOS: "UPDATE_TODOS",
   DELETE_TODO: "DELETE_TODO",
   UPDATE_CHECKED: "UPDATE_CHECKED",
@@ -78,10 +79,20 @@ const actions = {
 
 function toDoListReducer(state, action) {
   let newTodos = [];
+  let updatedNewItem = state.newItem;
   switch (action.type) {
     case actions.ADD_TODO:
       newTodos = [...state.todos, action.value];
       return { ...state, todos: newTodos };
+    case actions.UPDATE_NEW_TITLE:
+      updatedNewItem.title = action.value;
+      return { ...state, newItem: updatedNewItem };
+    case actions.UPDATE_NEW_NOTE:
+      updatedNewItem.note = action.value;
+      return { ...state, newItem: updatedNewItem };
+    case actions.UPDATE_NEW_ID:
+      updatedNewItem.id = action.value;
+      return { ...state, newItem: updatedNewItem };
     case actions.UPDATE_TODOS:
       return { ...state, todos: action.value };
     case actions.DELETE_TODO:
@@ -118,7 +129,13 @@ function Provider({ children }) {
 
   const value = {
     todos: state.todos,
+    newItem: state.newItem,
     addTodo: (value) => dispatch({ type: actions.ADD_TODO, value }),
+    updateNewTitle: (value) =>
+      dispatch({ type: actions.UPDATE_NEW_TITLE, value }),
+    updateNewNote: (value) =>
+      dispatch({ type: actions.UPDATE_NEW_NOTE, value }),
+    updateNewId: (value) => dispatch({ type: actions.UPDATE_NEW_ID, value }),
     updateTodos: (value) => dispatch({ type: actions.UPDATE_TODOS, value }),
     deleteTodo: (value) => dispatch({ type: actions.DELETE_TODO, value }),
     updateChecked: (value) => dispatch({ type: actions.UPDATE_CHECKED, value }),
@@ -130,64 +147,28 @@ function Provider({ children }) {
 export function ToDoList() {
   const classes = useStyles();
 
-  const { todos, updateChecked, addTodo, updateTodos, deleteTodo } = useContext(
-    ToDoContext
-  );
+  const {
+    todos,
+    updateChecked,
+    updateTodos,
+    deleteTodo,
+    updateNewTitle,
+    updateNewNote,
+  } = useContext(ToDoContext);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [newTitle, setNewTitle] = React.useState("");
-  const [newId, setNewId] = React.useState(uuidV4());
-  const [newNote, setNewNote] = React.useState("");
   const [editExisting, setEditExisting] = React.useState(undefined);
-
-  const clearFields = () => {
-    setNewNote("");
-    setNewTitle("");
-  };
-
-  const handleCloseDialog = () => {
-    clearFields();
-    setDialogOpen(false);
-  };
-
-  const handleAddItem = () => {
-    setNewId(uuidV4());
-    const item = {
-      title: newTitle,
-      note: newNote,
-      checked: false,
-      id: newId,
-    };
-    addTodo(item);
-    clearFields();
-    setDialogOpen(false);
-  };
-
-  const handleUpdateItem = () => {
-    const index = _.findIndex(todos, (item) => item.id === editExisting);
-
-    if (index >= 0) {
-      const newItem = { ...todos[index], title: newTitle, note: newNote };
-      let modifiedToDos = [...todos];
-      modifiedToDos[index] = newItem;
-
-      updateTodos(modifiedToDos);
-    } else {
-      console.log("This should never happen");
-    }
-
-    clearFields();
-    setDialogOpen(false);
-    setEditExisting(undefined);
-  };
 
   const handleOpenModal = (id) => {
     const editItem = _.find(todos, (item) => item.id === id);
     setEditExisting(id);
-    setNewTitle(editItem.title);
-    setNewNote(editItem.note);
+    updateNewTitle(editItem.title);
+    updateNewNote(editItem.note);
     setDialogOpen(true);
   };
 
+  /*
+    Reorders todo elements when item is dropped into new location
+   */
   const onDragEnd = (result) => {
     if (!result.destination) return;
     const { source, destination } = result;
@@ -254,57 +235,12 @@ export function ToDoList() {
               </Droppable>
             </DragDropContext>
           </div>
-          <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-            <DialogTitle id="form-dialog-title">Add New Item</DialogTitle>
-            <DialogContent>
-              <TextField
-                autoFocus
-                margin="dense"
-                id="new-title"
-                label="Title"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                type="text"
-                fullWidth
-              />
-              <TextField
-                margin="dense"
-                id="new-note"
-                label="Notes"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                type="text"
-                multiline
-                fullWidth
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button
-                onClick={handleCloseDialog}
-                variant="contained"
-                color="secondary"
-              >
-                Cancel
-              </Button>
-              {editExisting ? (
-                <Button
-                  onClick={handleUpdateItem}
-                  variant="contained"
-                  color="primary"
-                >
-                  Update
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleAddItem}
-                  variant="contained"
-                  color="primary"
-                >
-                  Add
-                </Button>
-              )}
-            </DialogActions>
-          </Dialog>
+          <ToDoModal
+            dialogOpen={dialogOpen}
+            setDialogOpen={setDialogOpen}
+            editExisting={editExisting}
+            setEditExisting={setEditExisting}
+          />
         </div>
       </Paper>
     </Container>
