@@ -17,9 +17,6 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
     margin: "0px 0px",
   },
-  noMargin: {
-    margin: "0px 0px",
-  },
   floatLeft: {
     float: "left",
     textAlign: "left",
