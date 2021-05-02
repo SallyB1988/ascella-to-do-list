@@ -67,10 +67,20 @@ const initialState = {
       id: uuidV4(),
     },
   ],
+  newItem: {
+    // used when creating/updating a new todo item
+    title: "",
+    note: "",
+    checked: false,
+    id: undefined,
+  },
 };
 
 const actions = {
   ADD_TODO: "ADD_TODO",
+  UPDATE_NEW_TITLE: "UPDATE_NEW_TITLE",
+  UPDATE_NEW_NOTE: "UPDATE_NEW_NOTE",
+  UPDATE_NEW_ID: "UPDATE_NEW_ID",
   UPDATE_TODOS: "UPDATE_TODOS",
   DELETE_TODO: "DELETE_TODO",
   UPDATE_CHECKED: "UPDATE_CHECKED",
@@ -78,10 +88,20 @@ const actions = {
 
 function toDoListReducer(state, action) {
   let newTodos = [];
+  let updatedNewItem = state.newItem;
   switch (action.type) {
     case actions.ADD_TODO:
       newTodos = [...state.todos, action.value];
       return { ...state, todos: newTodos };
+    case actions.UPDATE_NEW_TITLE:
+      updatedNewItem.title = action.value;
+      return { ...state, newItem: updatedNewItem };
+    case actions.UPDATE_NEW_NOTE:
+      updatedNewItem.note = action.value;
+      return { ...state, newItem: updatedNewItem };
+    case actions.UPDATE_NEW_ID:
+      updatedNewItem.id = action.value;
+      return { ...state, newItem: updatedNewItem };
     case actions.UPDATE_TODOS:
       return { ...state, todos: action.value };
     case actions.DELETE_TODO:
@@ -118,7 +138,13 @@ function Provider({ children }) {
 
   const value = {
     todos: state.todos,
+    newItem: state.newItem,
     addTodo: (value) => dispatch({ type: actions.ADD_TODO, value }),
+    updateNewTitle: (value) =>
+      dispatch({ type: actions.UPDATE_NEW_TITLE, value }),
+    updateNewNote: (value) =>
+      dispatch({ type: actions.UPDATE_NEW_NOTE, value }),
+    updateNewId: (value) => dispatch({ type: actions.UPDATE_NEW_ID, value }),
     updateTodos: (value) => dispatch({ type: actions.UPDATE_TODOS, value }),
     deleteTodo: (value) => dispatch({ type: actions.DELETE_TODO, value }),
     updateChecked: (value) => dispatch({ type: actions.UPDATE_CHECKED, value }),
@@ -130,18 +156,29 @@ function Provider({ children }) {
 export function ToDoList() {
   const classes = useStyles();
 
-  const { todos, updateChecked, addTodo, updateTodos, deleteTodo } = useContext(
-    ToDoContext
-  );
+  const {
+    todos,
+    newItem,
+    updateChecked,
+    addTodo,
+    updateTodos,
+    deleteTodo,
+    updateNewTitle,
+    updateNewNote,
+    updateNewId,
+  } = useContext(ToDoContext);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [newTitle, setNewTitle] = React.useState("");
-  const [newId, setNewId] = React.useState(uuidV4());
-  const [newNote, setNewNote] = React.useState("");
   const [editExisting, setEditExisting] = React.useState(undefined);
 
   const clearFields = () => {
-    setNewNote("");
-    setNewTitle("");
+    updateNewNote("");
+    updateNewTitle("");
+  };
+
+  const clearNewItem = () => {
+    updateNewNote("");
+    updateNewTitle("");
+    updateNewId(undefined);
   };
 
   const handleCloseDialog = () => {
@@ -150,12 +187,12 @@ export function ToDoList() {
   };
 
   const handleAddItem = () => {
-    setNewId(uuidV4());
+    updateNewId(uuidV4());
     const item = {
-      title: newTitle,
-      note: newNote,
+      title: newItem.title,
+      note: newItem.note,
       checked: false,
-      id: newId,
+      id: newItem.id,
     };
     addTodo(item);
     clearFields();
@@ -164,13 +201,20 @@ export function ToDoList() {
 
   const handleUpdateItem = () => {
     const index = _.findIndex(todos, (item) => item.id === editExisting);
+    const copyId = todos[index].id;
 
     if (index >= 0) {
-      const newItem = { ...todos[index], title: newTitle, note: newNote };
+      const updatedNewItem = {
+        ...todos[index],
+        title: newItem.title,
+        note: newItem.note,
+        id: copyId,
+      };
       let modifiedToDos = [...todos];
-      modifiedToDos[index] = newItem;
+      modifiedToDos[index] = updatedNewItem;
 
       updateTodos(modifiedToDos);
+      clearNewItem();
     } else {
       console.log("This should never happen");
     }
@@ -183,8 +227,8 @@ export function ToDoList() {
   const handleOpenModal = (id) => {
     const editItem = _.find(todos, (item) => item.id === id);
     setEditExisting(id);
-    setNewTitle(editItem.title);
-    setNewNote(editItem.note);
+    updateNewTitle(editItem.title);
+    updateNewNote(editItem.note);
     setDialogOpen(true);
   };
 
@@ -262,8 +306,8 @@ export function ToDoList() {
                 margin="dense"
                 id="new-title"
                 label="Title"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
+                value={newItem.title}
+                onChange={(e) => updateNewTitle(e.target.value)}
                 type="text"
                 fullWidth
               />
@@ -271,8 +315,8 @@ export function ToDoList() {
                 margin="dense"
                 id="new-note"
                 label="Notes"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
+                value={newItem.note}
+                onChange={(e) => updateNewNote(e.target.value)}
                 type="text"
                 multiline
                 fullWidth
