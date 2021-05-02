@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useReducer } from "react";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { MuiThemeProvider, createMuiTheme } from "@material-ui/core/styles";
 import { blue, blueGrey } from "@material-ui/core/colors";
-
+import { v4 as uuidV4 } from "uuid";
 import {
   makeStyles,
   Button,
   DialogTitle,
   DialogContent,
-  Grid,
   Paper,
   Container,
   TextField,
@@ -36,7 +36,7 @@ const useStyles = makeStyles((theme) => ({
     padding: "2%",
     backgroundColor: "#1e709e",
   },
-  gridRow: {
+  addItemRow: {
     padding: "10px",
     backgroundColor: "#bdcd754",
   },
@@ -64,7 +64,7 @@ const initialState = {
       note:
         "This can have a note attached to it. All items can be updated or deleted.",
       checked: false,
-      id: 1555,
+      id: uuidV4(),
     },
   ],
 };
@@ -85,13 +85,13 @@ function toDoListReducer(state, action) {
     case actions.UPDATE_TODOS:
       return { ...state, todos: action.value };
     case actions.DELETE_TODO:
-      newTodos = _.filter(state.todos, (item) => item.id != action.value);
+      newTodos = _.filter(state.todos, (item) => item.id !== action.value);
       return { ...state, todos: newTodos };
     case actions.UPDATE_CHECKED:
       const checked = action.value.checked;
       const index = _.findIndex(
         state.todos,
-        (item) => item.id == action.value.id
+        (item) => item.id === action.value.id
       );
       newTodos = [...state.todos];
       newTodos[index] = { ...newTodos[index], checked: checked };
@@ -135,9 +135,9 @@ export function ToDoList() {
   );
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState("");
-  const [newId, setNewId] = React.useState(1);
+  const [newId, setNewId] = React.useState(uuidV4());
   const [newNote, setNewNote] = React.useState("");
-  const [editExisting, setEditExisting] = React.useState(-1);
+  const [editExisting, setEditExisting] = React.useState(undefined);
 
   const clearFields = () => {
     setNewNote("");
@@ -150,7 +150,7 @@ export function ToDoList() {
   };
 
   const handleAddItem = () => {
-    setNewId(newId + 1);
+    setNewId(uuidV4());
     const item = {
       title: newTitle,
       note: newNote,
@@ -177,7 +177,7 @@ export function ToDoList() {
 
     clearFields();
     setDialogOpen(false);
-    setEditExisting(-1);
+    setEditExisting(undefined);
   };
 
   const handleOpenModal = (id) => {
@@ -188,40 +188,72 @@ export function ToDoList() {
     setDialogOpen(true);
   };
 
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    const { source, destination } = result;
+    const copiedItems = [...todos];
+    const [removed] = copiedItems.splice(source.index, 1);
+    copiedItems.splice(destination.index, 0, removed);
+    updateTodos(copiedItems);
+  };
+
   return (
     <Container className={classes.container}>
       <Paper className={classes.paper}>
-        <Grid>
-          <Grid item xs={12} position="sticky">
-            <ToDoHeader />
-          </Grid>
-          <Grid className={classes.gridRow} container direction="row">
-            <Grid item xs={12}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => setDialogOpen(true)}
-              >
-                Add Item
-              </Button>
-            </Grid>
-          </Grid>
-          <Grid item xs={12}>
-            <div className={classes.itemsDiv}>
-              {_.map(todos, (item, idx) => (
-                <ToDo
-                  key={`todo-${idx}`}
-                  id={item.id}
-                  title={item.title}
-                  note={item.note}
-                  checked={item.checked}
-                  updateChecked={updateChecked}
-                  handleEditItem={() => handleOpenModal(item.id)}
-                  handleDeleteItem={() => deleteTodo(item.id)}
-                />
-              ))}
-            </div>
-          </Grid>
+        <div>
+          <ToDoHeader />
+          <div className={classes.addItemRow}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setDialogOpen(true)}
+            >
+              Add Item
+            </Button>
+          </div>
+          <div className={classes.itemsDiv}>
+            <DragDropContext onDragEnd={(result) => onDragEnd(result)}>
+              <Droppable droppableId="droppable-id">
+                {(provided, snapshot) => {
+                  return (
+                    <div {...provided.droppableProps} ref={provided.innerRef}>
+                      {_.map(todos, (item, idx) => (
+                        <Draggable
+                          key={item.id}
+                          draggableId={item.id}
+                          index={idx}
+                        >
+                          {(provided, snapshot) => {
+                            return (
+                              <div
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                {...provided.draggableProps.style}
+                                ref={provided.innerRef}
+                              >
+                                <ToDo
+                                  key={`todo-${idx}`}
+                                  id={item.id}
+                                  title={item.title}
+                                  note={item.note}
+                                  checked={item.checked}
+                                  updateChecked={updateChecked}
+                                  handleEditItem={() =>
+                                    handleOpenModal(item.id)
+                                  }
+                                  handleDeleteItem={() => deleteTodo(item.id)}
+                                />
+                              </div>
+                            );
+                          }}
+                        </Draggable>
+                      ))}
+                    </div>
+                  );
+                }}
+              </Droppable>
+            </DragDropContext>
+          </div>
           <Dialog open={dialogOpen} onClose={handleCloseDialog}>
             <DialogTitle id="form-dialog-title">Add New Item</DialogTitle>
             <DialogContent>
@@ -254,7 +286,7 @@ export function ToDoList() {
               >
                 Cancel
               </Button>
-              {editExisting >= 0 ? (
+              {editExisting ? (
                 <Button
                   onClick={handleUpdateItem}
                   variant="contained"
@@ -273,7 +305,7 @@ export function ToDoList() {
               )}
             </DialogActions>
           </Dialog>
-        </Grid>
+        </div>
       </Paper>
     </Container>
   );
