@@ -22,10 +22,10 @@ const useStyles = makeStyles((theme) => ({
   },
   floatLeft: {
     float: "left",
+    textAlign: "left",
   },
-  summary: {
-    margin: "0px 0px",
-    backgroundColor: "#bcd754",
+  notes: {
+    textAlign: "left",
   },
 }));
 
@@ -78,7 +78,7 @@ export default function ToDo({
           </Grid>
         </Grid>
       </AccordionSummary>
-      <AccordionDetails>{note}</AccordionDetails>
+      <AccordionDetails className={classes.notes}>{note}</AccordionDetails>
     </Accordion>
   );
 }
