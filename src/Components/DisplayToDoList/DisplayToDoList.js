@@ -53,7 +53,7 @@ const initialState = {
     {
       title: "Example initial item",
       note:
-        "This can have a note attached to it. All items can be reordered, updated or deleted.",
+        "This can have a note attached to it. All items can be checked as completed, reordered, updated or deleted.",
       checked: false,
       id: uuidV4(),
     },
