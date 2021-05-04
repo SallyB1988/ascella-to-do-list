@@ -26,6 +26,12 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+/*
+ *  Component for displaying a ToDo item and its note.
+ *     The display of the note can be expanded or collapsed
+ *     ToDo item has a checkbox for marking completion of item
+ *     Displays icons for editing or deleting the item
+ */
 export default function ToDo({
   title,
   note,
@@ -42,6 +48,7 @@ export default function ToDo({
         <Grid container direction="row" alignItems="center">
           <Grid item xs={1}>
             <Checkbox
+              id={`checkbox-${id}`}
               checked={checked}
               onClick={(event) => {
                 event.stopPropagation();
@@ -55,6 +62,7 @@ export default function ToDo({
           </Grid>
           <Grid item xs={1}>
             <IconButton
+              id={`edit-${id}`}
               onClick={(event) => {
                 event.stopPropagation();
                 handleEditItem(id);
@@ -65,6 +73,7 @@ export default function ToDo({
           </Grid>
           <Grid item xs={1}>
             <IconButton
+              id={`delete-${id}`}
               onClick={(event) => {
                 event.stopPropagation();
                 handleDeleteItem(id);
